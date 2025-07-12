@@ -67,7 +67,7 @@ export interface ChatHistoryResponse {
   chatId: string;
   email: string;
   createdAt: string;
-  conversations: ConversationDetail[];
+  conversations: ConversationDetail[] | null;
 }
 
 export interface ChatResponse {

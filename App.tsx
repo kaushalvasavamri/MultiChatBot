@@ -4,10 +4,11 @@ import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '
 import ChatScreen from './screens/ChatScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Platform, View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Message } from './screens/ChatScreen';
+import { Colors, Headers, Buttons, Lists, Dividers, Spacing, CommonValues } from './styles/common';
 
 const Drawer = createDrawerNavigator();
 
@@ -15,12 +16,12 @@ const MyTheme: Theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: '#ffffff',
-    primary: '#0D75B0',
-    card: '#e6f3ff',
-    text: '#222b45',
-    border: '#0D75B0',
-    notification: '#0D75B0',
+    background: Colors.background,
+    primary: Colors.primary,
+    card: Colors.primaryLight,
+    text: Colors.textPrimary,
+    border: Colors.primary,
+    notification: Colors.primary,
   },
 };
 
@@ -45,34 +46,37 @@ const CustomDrawerContent = (props: any) => {
 
   return (
     <View style={styles.drawerContainer}>
-      <View style={styles.drawerHeader}>
-        <Text style={styles.drawerTitle}>MultiChatBot</Text>
-        <Text style={styles.drawerSubtitle}>AI Assistant</Text>
-      </View>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: Colors.primary }}>
+        <View style={Headers.drawer}>
+          <Text style={Headers.drawerTitle}>MultiChatBot</Text>
+          <Text style={Headers.drawerSubtitle}>AI Assistant</Text>
+        </View>
+      </SafeAreaView>
       
       <DrawerContentScrollView {...props}>
-        <View style={styles.newChatContainer}>
+        {/* <View style={styles.newChatContainer}> */}
           <TouchableOpacity 
-            style={styles.newChatButton}
+            style={[Buttons.primary, { width: '100%', marginTop: 0 }]}
             onPress={handleNewChat}
           >
-            <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.newChatText}>New Chat</Text>
+            <View style={{ flexDirection: 'row', justifyContent:'center', alignItems: 'center', gap: Spacing.sm }}>
+              <Ionicons name="add" size={20} color={Colors.textInverse} />
+              <Text style={Buttons.primaryText}>New Chat</Text>
+            </View>
           </TouchableOpacity>
-        </View>
         
-        <View style={styles.divider} />
+        <View style={Dividers.horizontal} />
         
         <View style={styles.historySection}>
           <Text style={styles.historyTitle}>Recent Chats</Text>
           <TouchableOpacity 
-            style={styles.historyItem}
+            style={Lists.item}
             onPress={() => {
               props.navigation.navigate('History');
             }}
           >
-            <Ionicons name="time-outline" size={20} color="#0D75B0" />
-            <Text style={styles.historyItemText}>Chat History</Text>
+            <Ionicons name="time-outline" size={20} color={Colors.primary} />
+            <Text style={Lists.itemText}>Chat History</Text>
           </TouchableOpacity>
         </View>
         
@@ -102,18 +106,18 @@ export default function App() {
           drawerContent={(props) => <CustomDrawerContent {...props} />}
           screenOptions={{
             headerStyle: {
-              backgroundColor: '#0D75B0',
+              backgroundColor: Colors.primary,
             },
-            headerTintColor: '#fff',
+            headerTintColor: Colors.textInverse,
             headerTitleStyle: {
               fontWeight: 'bold',
             },
             drawerStyle: {
-              backgroundColor: '#fff',
+              backgroundColor: Colors.white,
               width: 280,
             },
-            drawerActiveTintColor: '#0D75B0',
-            drawerInactiveTintColor: '#666',
+            drawerActiveTintColor: Colors.primary,
+            drawerInactiveTintColor: Colors.gray[500],
           }}
         >
           <Drawer.Screen 
@@ -157,79 +161,21 @@ export default function App() {
 const styles = StyleSheet.create({
   drawerContainer: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  drawerHeader: {
-    padding: 20,
-    alignItems: 'center',
-    backgroundColor: '#0D75B0',
-    paddingTop: 18,
-    paddingBottom: 10,
-  },
-  drawerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  drawerSubtitle: {
-    fontSize: 16,
-    color: '#fff',
-    opacity: 0.9,
+    backgroundColor: Colors.white,
   },
   newChatContainer: {
-    padding: 15,
-  },
-  newChatButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0D75B0',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  newChatText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 10,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 15,
-    marginHorizontal: 15,
+    paddingHorizontal: Spacing.md,
+    marginTop: 0,
   },
   historySection: {
-    paddingHorizontal: 15,
-    marginBottom: 15,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
   },
   historyTitle: {
-    fontSize: 16,
+    fontSize: CommonValues.fontSize.large,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
-    paddingHorizontal: 5,
-  },
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    backgroundColor: '#f8f9fa',
-    marginBottom: 5,
-  },
-  historyItemText: {
-    fontSize: 15,
-    color: '#0D75B0',
-    marginLeft: 12,
-    fontWeight: '500',
+    color: Colors.textPrimary,
+    marginBottom: CommonValues.spacing.large,
+    paddingHorizontal: CommonValues.spacing.small,
   },
 });
