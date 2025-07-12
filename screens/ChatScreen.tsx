@@ -7,6 +7,7 @@ import { BottomNavHeightContext } from '../App';
 import axios from 'axios';
 import InputBar from '../components/InputBar';
 import { apiService, ChatRequest } from '../services/api';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
 
 // UUID generation function
 const generateUUID = (): string => {
@@ -43,56 +44,17 @@ const priorities = [
   { label: 'Urgent', value: 'urgent' },
 ];
 
-const mockSlots = [
-  { id: 1, time: '10:00 AM - 10:30 AM' },
-  { id: 2, time: '11:00 AM - 11:30 AM' },
-  { id: 3, time: '2:00 PM - 2:30 PM' },
-];
-
-// Mock API base URL
-const API_BASE_URL = 'https://api.example.com';
-
-const fetchSlots = async (issueType: string, priority: string) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/slots`, {
-      params: { issueType, priority }
-    });
-    return response.data;
-  } catch (error) {
-    console.log('Mock API: Fetching slots...');
-    // Mock response
-    return new Promise<{ id: number; time: string }[]>(resolve => {
-      setTimeout(() => resolve(mockSlots), 700);
-    });
-  }
-};
-
-const bookSlot = async (slotId: number, email: string) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/book-slot`, {
-      slotId,
-      email
-    });
-    return response.data.success;
-  } catch (error) {
-    console.log('Mock API: Booking slot...');
-    // Mock response
-    return new Promise(resolve => {
-      setTimeout(() => resolve(true), 700);
-    });
-  }
-};
-
-
+// Removed mock slots and API calls - using sendChatMessage API instead
 
 const initialBotMessage: Message = { id: 'greet', text: 'Hi! How can I help you today?', isUser: false };
 
 const FAB_SIZE = 64;
 const FAB_BOTTOM = 32;
 const INPUT_BAR_GAP = 8;
-const TAB_BAR_HEIGHT = 96;
+const TAB_BAR_HEIGHT = 0; // Set to 0 since we removed bottom nav
 
 interface ChatScreenProps {
+  navigation: DrawerNavigationProp<any>;
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   input: string;
@@ -102,73 +64,39 @@ interface ChatScreenProps {
   onNewChat?: () => void;
 }
 
-const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, setInput, pickedImage, setPickedImage, onNewChat }) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessages, input, setInput, pickedImage, setPickedImage, onNewChat }) => {
   const [step, setStep] = useState<Step>('waitUser');
-  const [slots, setSlots] = useState<{ id: number; time: string }[]>([]);
   const headerHeight = 0;
   const [selectedIssueType, setSelectedIssueType] = useState<string | null>(null);
   const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [email, setEmail] = useState('');
   const insets = useSafeAreaInsets();
-  const bottomNavHeight = React.useContext(BottomNavHeightContext);
-  const inputBarMarginBottom =
-    Platform.OS === 'web'
-      ? FAB_BOTTOM + FAB_SIZE + INPUT_BAR_GAP // 104
-      : insets.bottom + bottomNavHeight + INPUT_BAR_GAP;
+  const inputBarMarginBottom = insets.bottom + INPUT_BAR_GAP;
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const flatListRef = React.useRef<FlatList>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Mock email for testing - in a real app, this would come from user authentication
   const TEST_EMAIL = 'nisarg.parikh@mrisoftware.com';
 
-  const loadChatHistory = async () => {
-    try {
-      const response = await apiService.getUserChatDetails(TEST_EMAIL);
-      if (response.success && response.data) {
-        // Convert API messages to our Message format
-        const apiMessages: Message[] = [];
-        
-        response.data.conversations?.forEach(conversation => {
-          conversation.messages?.forEach(msg => {
-            apiMessages.push({
-              id: msg.messageId,
-              text: msg.messageText,
-              isUser: msg.sender === 'user'
-            });
-          });
-        });
-        
-        if (apiMessages.length > 0) {
-          setMessages(apiMessages);
-          // Set the current chat ID from the most recent conversation
-          if (response.data.conversations && response.data.conversations.length > 0) {
-            const latestConversation = response.data.conversations[0];
-            setCurrentChatId(latestConversation.chatId);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-    }
-  };
+  // ChatScreen starts fresh with initial bot message
+  // Chat history is handled by HistoryScreen to avoid confusion
+  // Users expect a clean slate when opening the chat screen
 
   const startNewChat = async () => {
     setMessages([initialBotMessage]);
     setStep('waitUser');
     setSelectedIssueType(null);
     setSelectedPriority(null);
-    setSelectedSlot(null);
     setEmail('');
     
-    // Generate new UUIDs for both chat and conversation
-    const newChatId = generateUUID();
-    const newConversationId = generateUUID();
-    setCurrentChatId(newChatId);
-    setCurrentConversationId(newConversationId);
+    // Reset chat and conversation IDs to null so they will be generated fresh
+    console.log('Starting new chat - resetting IDs');
+    setCurrentChatId(null);
+    setCurrentConversationId(null);
     
     // Create a new chat session
     try {
@@ -182,12 +110,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, s
   };
 
   const saveMessageToAPI = async (message: string, isUser: boolean, type?: string, data?: any) => {
-    if (!currentChatId) return;
-    
-    try {
-      await apiService.saveConversationMessage(currentChatId, message, isUser, type, data);
-    } catch (error) {
-      console.error('Error saving message to API:', error);
+    // Use the current chat ID from state
+    const chatId = currentChatId;
+    if (!chatId) {
+      console.log('No chat ID available for saving message');
+      return;
     }
   };
 
@@ -220,6 +147,24 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, s
   const handleSend = async () => {
     if (!input.trim() && !pickedImage) return;
     
+    // Set loading state
+    setIsLoading(true);
+    
+    // Generate chat and conversation IDs only if they don't exist yet
+    let chatId = currentChatId;
+    let conversationId = currentConversationId;
+    
+    if (!chatId) {
+      chatId = generateUUID();
+      setCurrentChatId(chatId);
+      console.log('Generated new Chat ID:', chatId);
+    }
+    if (!conversationId) {
+      conversationId = generateUUID();
+      setCurrentConversationId(conversationId);
+      console.log('Generated new Conversation ID:', conversationId);
+    }
+    
     const userMsg: Message = pickedImage
       ? { id: generateUUID(), text: input, isUser: true, type: 'image', data: { uri: pickedImage } }
       : { id: generateUUID(), text: input, isUser: true };
@@ -239,12 +184,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, s
           userEmail: TEST_EMAIL,
           message: input.trim(),
           isNewConversation: !currentConversationId,
-          chatId: currentChatId || generateUUID(),
-          conversationId: currentConversationId || generateUUID(),
+          chatId: chatId,
+          conversationId: conversationId || generateUUID(),
           sender: 'user'
         };
 
         console.log('Sending chat request from ChatScreen:', chatRequest);
+        console.log('Using Chat ID:', chatId);
+        console.log('Using Conversation ID:', conversationId);
 
         const chatResponse = await apiService.sendChatMessage(chatRequest);
         
@@ -356,43 +303,149 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, s
         setInput('');
         return;
       }
-      setEmail(input.trim());
-      setStep('slot');
+      
+      // Valid email entered - save it and send API request
+      setIsLoading(true);
+      const userEmail = input.trim();
+      setEmail(userEmail);
+      
+      // Save user email message to API
+      await saveMessageToAPI(`Email: ${userEmail}`, true);
+      
+      // Send the email to the API to continue the conversation
+      try {
+        let chatId = currentChatId;
+        let conversationId = currentConversationId;
+        if (!chatId) {
+          chatId = generateUUID();
+          setCurrentChatId(chatId);
+          console.log('Generated new Chat ID (email):', chatId);
+        }
+        if (!conversationId) {
+          conversationId = generateUUID();
+          setCurrentConversationId(conversationId);
+          console.log('Generated new Conversation ID (email):', conversationId);
+        }
+        
+        const chatRequest: ChatRequest = {
+          userEmail: TEST_EMAIL,
+          message: userEmail,
+          isNewConversation: false,
+          chatId: chatId,
+          conversationId: conversationId || generateUUID(),
+          sender: 'user'
+        };
+
+        console.log('Sending email to API:', chatRequest);
+        
+        const chatResponse = await apiService.sendChatMessage(chatRequest);
+        
+        if (chatResponse.success && chatResponse.confirmationMessage) {
+          const confirmationMessage = chatResponse.confirmationMessage;
+          setTimeout(() => {
+            const botMessage = { id: generateUUID(), text: confirmationMessage, isUser: false };
+            setMessages(prev => [botMessage, ...prev]);
+            
+            // Save bot response to API
+            saveMessageToAPI(confirmationMessage, false);
+            
+            // Check what the next step should be based on userIssueJson
+            const userIssue = chatResponse.userIssueJson;
+            if (userIssue && userIssue.preferredSlotIndex === null) {
+              setStep('slot');
+            } else {
+              setStep('waitUser');
+            }
+          }, 800);
+        }
+      } catch (error) {
+        console.error('Error sending email to API:', error);
+        // Fallback to slot step if API fails
+        setStep('slot');
+      } finally {
+        setIsLoading(false);
+      }
+      
       setInput('');
       return;
     } else if (step === 'slot') {
-      const idx = parseInt(input.trim(), 10) - 1;
-      if (!isNaN(idx) && slots[idx]) {
-        setSelectedSlot(slots[idx].id);
-        const bookingMsg: Message = { id: generateUUID(), text: `Booking slot for ${email}...`, isUser: false };
-        setMessages(prev => [bookingMsg, ...prev]);
+      const slotNumber = parseInt(input.trim(), 10);
+      console.log('Slot validation:', { input: input.trim(), slotNumber });
+      
+      if (!isNaN(slotNumber) && slotNumber >= 1) {
+        setIsLoading(true);
         
-        // Save bot message to API
-        saveMessageToAPI(`Booking slot for ${email}...`, false);
-        
-        setStep('confirmation');
-        const success = await bookSlot(slots[idx].id, email);
-        setTimeout(() => {
-          const confirmMsg: Message = { id: generateUUID(), text: success ? 'Your slot has been booked!' : 'Failed to book slot.', isUser: false, type: 'confirmation' };
-          setMessages(prev => [confirmMsg, ...prev]);
+        // Send the slot selection to the API to continue the conversation
+        try {
+          let chatId = currentChatId;
+          let conversationId = currentConversationId;
+          if (!chatId) {
+            chatId = generateUUID();
+            setCurrentChatId(chatId);
+            console.log('Generated new Chat ID (slot):', chatId);
+          }
+          if (!conversationId) {
+            conversationId = generateUUID();
+            setCurrentConversationId(conversationId);
+            console.log('Generated new Conversation ID (slot):', conversationId);
+          }
           
-          // Save bot message to API
-          saveMessageToAPI(success ? 'Your slot has been booked!' : 'Failed to book slot.', false, 'confirmation');
-        }, 700);
+          const chatRequest: ChatRequest = {
+            userEmail: TEST_EMAIL,
+            message:  slotNumber.toString(),
+            isNewConversation: false,
+            chatId: chatId,
+            conversationId: conversationId || generateUUID(),
+            sender: 'user'
+          };
+
+          console.log('Sending slot selection to API:', chatRequest);
+          
+          const chatResponse = await apiService.sendChatMessage(chatRequest);
+          
+          if (chatResponse.success && chatResponse.confirmationMessage) {
+            const confirmationMessage = chatResponse.confirmationMessage;
+            setTimeout(() => {
+              const botMessage = { id: generateUUID(), text: confirmationMessage, isUser: false };
+              setMessages(prev => [botMessage, ...prev]);
+              
+              // Save bot response to API
+              saveMessageToAPI(confirmationMessage, false);
+              
+              // Move to confirmation step
+              setStep('confirmation');
+            }, 800);
+          }
+        } catch (error) {
+          console.error('Error sending slot selection to API:', error);
+          // Show error message if API fails
+          const errorMsg: Message = { id: generateUUID(), text: 'Sorry, there was an error processing your slot selection. Please try again.', isUser: false };
+          setMessages(prev => [errorMsg, ...prev]);
+        } finally {
+          setIsLoading(false);
+        }
       } else {
-        const invalidSlotMsg: Message = { id: generateUUID(), text: 'Please enter a valid slot number.', isUser: false };
+        const invalidSlotMsg: Message = { 
+          id: generateUUID(), 
+          text: `Please enter a valid slot number. You entered: "${input.trim()}"`, 
+          isUser: false 
+        };
         setMessages(prev => [invalidSlotMsg, ...prev]);
         
         // Save bot message to API
-        saveMessageToAPI('Please enter a valid slot number.', false);
+        saveMessageToAPI('Please enter a valid slot number', false);
       }
       setInput('');
       return;
     }
     setInput('');
+    
+    // Reset loading state
+    setIsLoading(false);
   };
 
   const handleIssueTypeSelect = async (issueType: string) => {
+    setIsLoading(true);
     setSelectedIssueType(issueType);
     const userMsg: Message = { id: generateUUID(), text: `Issue: ${issueType.charAt(0).toUpperCase() + issueType.slice(1)}`, isUser: true };
     setMessages(prev => [userMsg, ...prev]);
@@ -400,14 +453,27 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, s
     // Save user message to API
     await saveMessageToAPI(`Issue: ${issueType.charAt(0).toUpperCase() + issueType.slice(1)}`, true);
     
+    // Use the same chat/conversation ID logic as handleSend
+    let chatId = currentChatId;
+    let conversationId = currentConversationId;
+    if (!chatId) {
+      chatId = generateUUID();
+      setCurrentChatId(chatId);
+      console.log('Generated new Chat ID (issueType):', chatId);
+    }
+    if (!conversationId) {
+      conversationId = generateUUID();
+      setCurrentConversationId(conversationId);
+      console.log('Generated new Conversation ID (issueType):', conversationId);
+    }
     // Send the selection to the API to get the next question
     try {
       const chatRequest: ChatRequest = {
         userEmail: TEST_EMAIL,
         message: `Issue Type: ${issueType}`,
         isNewConversation: false,
-        chatId: currentChatId || generateUUID(),
-        conversationId: currentConversationId || generateUUID(),
+        chatId: chatId,
+        conversationId: conversationId || generateUUID(),
         sender: 'user'
       };
 
@@ -463,10 +529,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, s
       }
     } catch (error) {
       console.error('Error sending issue type selection:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handlePrioritySelect = async (priority: string) => {
+    setIsLoading(true);
     setSelectedPriority(priority);
     const userMsg: Message = { id: generateUUID(), text: `Priority: ${priority.charAt(0).toUpperCase() + priority.slice(1)}`, isUser: true };
     setMessages(prev => [userMsg, ...prev]);
@@ -474,14 +543,27 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, s
     // Save user message to API
     await saveMessageToAPI(`Priority: ${priority.charAt(0).toUpperCase() + priority.slice(1)}`, true);
     
+    // Use the same chat/conversation ID logic as handleSend
+    let chatId = currentChatId;
+    let conversationId = currentConversationId;
+    if (!chatId) {
+      chatId = generateUUID();
+      setCurrentChatId(chatId);
+      console.log('Generated new Chat ID (priority):', chatId);
+    }
+    if (!conversationId) {
+      conversationId = generateUUID();
+      setCurrentConversationId(conversationId);
+      console.log('Generated new Conversation ID (priority):', conversationId);
+    }
     // Send the selection to the API to get the next question
     try {
       const chatRequest: ChatRequest = {
         userEmail: TEST_EMAIL,
         message: `Priority: ${priority}`,
         isNewConversation: false,
-        chatId: currentChatId || generateUUID(),
-        conversationId: currentConversationId || generateUUID(),
+        chatId: chatId,
+        conversationId: conversationId || generateUUID(),
         sender: 'user'
       };
 
@@ -522,41 +604,24 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, s
       }
     } catch (error) {
       console.error('Error sending priority selection:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  React.useEffect(() => {
-    if (step === 'slot' && selectedIssueType && selectedPriority) {
-      setMessages(prev => [
-        { id: generateUUID(), text: 'Fetching available time slots...', isUser: false },
-        ...prev,
-      ]);
-      fetchSlots(selectedIssueType, selectedPriority).then(slots => {
-        setSlots(slots);
-        setTimeout(() => {
-          setMessages(prev => [
-            {
-              id: generateUUID(),
-              text: `Available slots:\n${slots.map((s: { id: number; time: string }, i: number) => `${i + 1}. ${s.time}`).join('\n')}\nPlease enter the slot number you want to book.`,
-              isUser: false,
-              type: 'slots',
-              data: slots,
-            },
-            ...prev,
-          ]);
-        }, 700);
-      });
-    }
-  }, [step, selectedIssueType, selectedPriority]);
+  // Removed fetchSlots useEffect - slots will be handled by the backend API
 
   React.useEffect(() => {
-    if (onNewChat) onNewChat();
+    if (onNewChat) {
+      onNewChat();
+      // Reset chat and conversation IDs for new chat
+      setCurrentChatId(null);
+      setCurrentConversationId(null);
+    }
   }, [onNewChat]);
 
-  // Load chat history when component mounts
-  React.useEffect(() => {
-    loadChatHistory();
-  }, []);
+  // ChatScreen starts fresh - no automatic history loading
+  // Users can view history in the HistoryScreen
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
@@ -644,54 +709,57 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ messages, setMessages, input, s
   }, [step, messages]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f0f8ff' }} edges={["top", "left", "right"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f0f8ff' }} edges={[ "left", "right"]}>
       <KeyboardAvoidingView
-        style={[styles.container, { paddingBottom: TAB_BAR_HEIGHT }]}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={headerHeight}
+        keyboardVerticalOffset={ useSafeAreaInsets().bottom }
       >
-        <Text style={styles.headerTitleSimple}>Chat</Text>
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={item => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={styles.messages}
-          inverted
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}
-          bounces={true}
-          scrollEventThrottle={16}
-          onScrollToIndexFailed={() => {}}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          initialNumToRender={10}
-          getItemLayout={(data, index) => ({
-            length: 80, // Approximate height of each message
-            offset: 80 * index,
-            index,
-          })}
-          onContentSizeChange={scrollToBottom}
-          onLayout={scrollToBottom}
-          onScroll={handleScroll}
-        />
-        {showScrollButton && (
-          <TouchableOpacity
-            style={styles.scrollButton}
-            onPress={scrollToBottom}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="arrow-down" size={20} color="#fff" />
-          </TouchableOpacity>
-        )}
-        <InputBar
-          value={input}
-          onChangeText={setInput}
-          onSend={handleSend}
-          onPickImage={pickImage}
-          disabled={step === 'issueType' || step === 'priority'}
-        />
+        <View style={{ flex: 1 }}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={item => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.messages}
+            inverted
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+            bounces={true}
+            scrollEventThrottle={16}
+            onScrollToIndexFailed={() => {}}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            initialNumToRender={10}
+            getItemLayout={(data, index) => ({
+              length: 80, // Approximate height of each message
+              offset: 80 * index,
+              index,
+            })}
+            onContentSizeChange={scrollToBottom}
+            onLayout={scrollToBottom}
+            onScroll={handleScroll}
+          />
+          {showScrollButton && (
+            <TouchableOpacity
+              style={styles.scrollButton}
+              onPress={scrollToBottom}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="arrow-down" size={20} color="#fff" />
+            </TouchableOpacity>
+          )}
+          <InputBar
+            value={input}
+            onChangeText={setInput}
+            onSend={handleSend}
+            onPickImage={pickImage}
+            disabled={step === 'issueType' || step === 'priority'}
+            isLoading={isLoading}
+            style={{ marginBottom: insets.bottom + 24 }}
+          />
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -825,6 +893,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
+    backgroundColor: '#f0f8ff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e6f3ff',
+  },
+  menuButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0D75B0',
+    flex: 1,
+    textAlign: 'center',
+  },
+  newChatButton: {
+    padding: 8,
   },
 });
 

@@ -49,7 +49,11 @@ const HistoryScreen: React.FC = () => {
 
   const handleChatPress = (conversation: any) => {
     // TODO: Navigate to chat screen with this conversation's messages
-    Alert.alert('Conversation Selected', `Opening conversation: ${conversation.conversationId}`);
+    // For now, show an alert with conversation details
+    Alert.alert(
+      'Conversation Selected', 
+      `Conversation ID: ${conversation.conversationId}\nMessages: ${conversation.messages?.length || 0}\nStarted: ${formatDate(conversation.startedAt)}`
+    );
   };
 
   const getTotalMessages = () => {
@@ -61,9 +65,6 @@ const HistoryScreen: React.FC = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={["top", "left", "right"]}>
         <View style={styles.container}>
-          <View style={styles.headerSimple}>
-            <Text style={styles.headerTitleSimple}>History</Text>
-          </View>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#0D75B0" />
             <Text style={styles.loadingText}>Loading chat history...</Text>
@@ -94,11 +95,7 @@ const HistoryScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={["top", "left", "right"]}>
-      <View style={styles.container}>
-        <View style={styles.headerSimple}>
-          <Text style={styles.headerTitleSimple}>History</Text>
-        </View>
-        
+      <View style={styles.container}>  
         {chatHistory && (
           <View style={styles.summaryContainer}>
             <Text style={styles.summaryText}>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface InputBarProps {
@@ -8,15 +8,19 @@ interface InputBarProps {
   onSend: () => void;
   onPickImage: () => void;
   disabled?: boolean;
+  isLoading?: boolean;
+  style?: any;
 }
 
-export default function InputBar({ value, onChangeText, onSend, onPickImage, disabled = false }: InputBarProps) {
+export default function InputBar({ value, onChangeText, onSend, onPickImage, disabled = false, isLoading = false, style }: InputBarProps) {
   return (
-    <View style={styles.inputBarExpressive}>
-      <TouchableOpacity style={styles.inputIconBtn} onPress={onPickImage}>
+    <View style={[styles.inputBarExpressive, style]}>
+      <TouchableOpacity style={styles.inputIconBtn} 
+      disabled={isLoading}
+      onPress={onPickImage}>
         <Ionicons name="add" size={24} color="#fff" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.inputIconBtn}>
+      <TouchableOpacity style={styles.inputIconBtn} disabled={isLoading}>
         <Ionicons name="mic" size={24} color="#fff" />
       </TouchableOpacity>
       <TextInput
@@ -29,9 +33,17 @@ export default function InputBar({ value, onChangeText, onSend, onPickImage, dis
         returnKeyType="send"
         onSubmitEditing={onSend}
       />
-      <TouchableOpacity style={styles.sendButtonExpressive} onPress={onSend} disabled={disabled}>
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#0D75B0" />
+      ) : (
+        <TouchableOpacity 
+          style={[styles.sendButtonExpressive, isLoading && styles.sendButtonLoading]} 
+          onPress={onSend} 
+          disabled={disabled || isLoading}
+        >
         <Ionicons name="send" size={26} color="#fff" />
-      </TouchableOpacity>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -53,7 +65,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 0.2,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   inputIconBtn: {
     width: 40,
@@ -85,5 +97,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.16,
     shadowRadius: 8,
     elevation: 4,
+  },
+  sendButtonLoading: {
+    opacity: 0.9,
   },
 }); 

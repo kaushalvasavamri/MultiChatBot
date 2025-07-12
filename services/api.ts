@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API Base URL
-const API_BASE_URL = 'https://6a0a-14-195-100-18.ngrok-free.app';
+const API_BASE_URL = 'https://hackathon-2025-baroda.azurewebsites.net';
 
 // Request Models
 export interface GetUserChatRequest {
@@ -133,30 +133,6 @@ class ApiService {
       };
     } catch (error) {
       console.error('Error creating new chat:', error);
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
-      };
-    }
-  }
-
-  // Save conversation message
-  async saveConversationMessage(chatId: string, message: string, isUser: boolean, type?: string, data?: any): Promise<{ success: boolean; message?: string }> {
-    try {
-      const response = await axios.post(`${this.baseURL}/ChatDetails/saveMessage`, {
-        chatId,
-        message,
-        isUser,
-        type,
-        data,
-        timestamp: new Date().toISOString()
-      });
-      
-      return {
-        success: true
-      };
-    } catch (error) {
-      console.error('Error saving conversation message:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error occurred'
