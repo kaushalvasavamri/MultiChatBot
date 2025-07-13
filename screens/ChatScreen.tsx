@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, Keyboard } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomNavHeightContext } from '../App';
-import axios from 'axios';
 import InputBar from '../components/InputBar';
 import { apiService, ChatRequest } from '../services/api';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { Colors, Layout, Cards, Buttons, Texts, Spacing, BorderRadius, CommonValues } from '../styles/common';
+import { Colors, Spacing, BorderRadius, CommonValues } from '../styles/common';
 import { useRoute } from '@react-navigation/native';
 
 // UUID generation function
@@ -35,7 +33,7 @@ export interface Message {
   id: string;
   text: string;
   isUser: boolean;
-  type?: 'text' | 'issueType' | 'priority' | 'slots' | 'confirmation' | 'email' | 'image';
+  type?: 'text' | 'issueType' | 'priority' | 'slots' | 'slot' | 'confirmation' | 'email' | 'image';
   data?: any;
 }
 
@@ -171,7 +169,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
       case 'slot':
         const slotNumber = parseInt(input.trim(), 10);
         userMessage = { id: generateUUID(), text: `Slot: ${slotNumber}`, isUser: true };
-        apiMessage = slotNumber.toString();
+        apiMessage = `Slot: ${slotNumber}`;
         break;
       case 'issueType':
         userMessage = { id: generateUUID(), text: `Issue: ${input.charAt(0).toUpperCase() + input.slice(1)}`, isUser: true };
@@ -294,9 +292,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         if (chatResponse.chatId) setCurrentChatId(chatResponse.chatId);
         if (chatResponse.conversationId) setCurrentConversationId(chatResponse.conversationId);
 
-        // Handle userIssueJson logic
+        // Handle userIssueJson logic - ask for only null fields
         const userIssue = chatResponse.userIssueJson;
         if (userIssue) {
+          // Check which fields are null and ask for them in sequence
           if (userIssue.issueType === null) {
             setTimeout(() => {
               setMessages(prev => [
@@ -322,7 +321,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
               setStep('email');
             }, 1000);
           } else if (userIssue.preferredSlotIndex === null) {
-            setStep('slot');
+            setTimeout(() => {
+              setMessages(prev => [
+                { id: 'ask-slot', text: 'Please enter your preferred slot number:', isUser: false, type: 'slot' },
+                ...prev,
+              ]);
+              setStep('slot');
+            }, 1000);
+          } else {
+            // All fields are filled, conversation is complete
+            console.log('All fields completed:', userIssue);
           }
         }
       }, 800);
@@ -436,19 +444,59 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     if (passedChatId) {
       setCurrentChatId(passedChatId);
       setIsOldChat(true);
+      console.log('Fetching old messages for chatId:', passedChatId);
       fetchOldMessages(passedChatId);
     }
   }, [passedChatId]);
 
   const fetchOldMessages = async (chatId: string) => {
+    console.log('Fetching old messages for chatId:', chatId);
     // Call your API to get the conversation for this chatId
-    const response = await apiService.getUserChatDetails(TEST_EMAIL);
+    const response = await apiService.getChatDetailsFromHistory(chatId);
     if (response.success && response.data) {
       const chats = Array.isArray(response.data) ? response.data : [response.data];
-      const chat = chats.find((c) => c.chatId === chatId);
+      const chat = chats.find((c: any) => c.chatId === chatId);
+      console.log('Chat:', chats);
       if (chat && chat.conversations && chat.conversations.length > 0) {
+        // Get the latest conversation to set the conversation ID
+        const latestConversation = chat.conversations[chat.conversations.length - 1];
+        console.log('Latest conversation:', latestConversation);
+        
+        // Set the conversation ID for this old chat so isNewConversation will be false
+        if (latestConversation.conversationId) {
+          setCurrentConversationId(latestConversation.conversationId);
+          console.log('Set conversation ID for old chat:', latestConversation.conversationId);
+          console.log('isNewConversation will be false for this old chat');
+        }
+        
+        // Parse extraction result to understand the current state
+        if (latestConversation.extractionResult) {
+          try {
+            const extractionResult = JSON.parse(latestConversation.extractionResult);
+            console.log('Extraction result from old chat:', extractionResult);
+            
+            // Check if conversation is complete (all fields filled)
+            const isComplete = extractionResult.IssueType && 
+                             extractionResult.Priority && 
+                             extractionResult.ContactEmail && 
+                             extractionResult.PreferredSlotIndex;
+            
+            if (isComplete) {
+              console.log('Old conversation is complete - no further questions needed');
+              setStep('waitUser'); // Allow free conversation
+            } else {
+              console.log('Old conversation is incomplete - will ask for remaining fields');
+              // The bot will automatically ask for null fields when user sends a message
+              setStep('waitUser');
+            }
+          } catch (error) {
+            console.error('Error parsing extraction result:', error);
+            setStep('waitUser');
+          }
+        }
+        
         // Flatten all messages from all conversations
-        const allMessages = chat.conversations.flatMap((conv: any) => (conv.messages || []));
+        const allMessages = chat.conversations.flatMap((conv: any) => (conv.messages || [])).reverse();
         // Map to your Message[] format
         setMessages(
           allMessages.map((msg: any) => ({
@@ -459,8 +507,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
           }))
         );
       } else {
+        console.log('No messages found for chatId:', chatId);
         // If no messages, show initial bot message
         setMessages([initialBotMessage]);
+        setStep('waitUser');
       }
     }
   };

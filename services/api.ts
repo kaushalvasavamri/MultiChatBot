@@ -169,7 +169,27 @@ class ApiService {
       };
     }
   }
-}
 
+  // API Endpoints
+  private CHAT_DETAILS_ENDPOINT = '/api/ChatDetails/ChatId';
+
+  // Get chat details from history
+  async getChatDetailsFromHistory(chatId: string) {
+    try {
+      const response = await axios.get(`${API_BASE_URL}${this.CHAT_DETAILS_ENDPOINT}?ChatId=${chatId}`);
+      console.log('Chat details response:', JSON.stringify(response.data, null, 2));
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error fetching chat details:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  };
+}
 // Export singleton instance
 export const apiService = new ApiService(); 

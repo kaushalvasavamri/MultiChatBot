@@ -33,17 +33,6 @@ const initialBotMessage: Message = { id: 'greet', text: 'Hi! How can I help you 
 
 // Custom drawer content component
 const CustomDrawerContent = (props: any) => {
-  const [messages, setMessages] = useState<Message[]>([initialBotMessage]);
-  const [input, setInput] = useState('');
-  const [pickedImage, setPickedImage] = useState<string | null>(null);
-
-  const handleNewChat = () => {
-    setMessages([initialBotMessage]);
-    setInput('');
-    setPickedImage(null);
-    props.navigation.navigate('Chat');
-  };
-
   return (
     <View style={styles.drawerContainer}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: Colors.primary }}>
@@ -54,17 +43,19 @@ const CustomDrawerContent = (props: any) => {
       </SafeAreaView>
       
       <DrawerContentScrollView {...props}>
-        {/* <View style={styles.newChatContainer}> */}
-          <TouchableOpacity 
-            style={[Buttons.primary, { width: '100%', marginTop: 0 }]}
-            onPress={handleNewChat}
-          >
-            <View style={{ flexDirection: 'row', justifyContent:'center', alignItems: 'center', gap: Spacing.sm }}>
-              <Ionicons name="add" size={20} color={Colors.textInverse} />
-              <Text style={Buttons.primaryText}>New Chat</Text>
-            </View>
-          </TouchableOpacity>
-        
+        <TouchableOpacity 
+          style={[Buttons.primary, { width: '100%', marginTop: 0 }]}
+          onPress={() => {
+            props.onNewChat();
+            props.navigation.navigate('Chat');
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent:'center', alignItems: 'center', gap: Spacing.sm }}>
+            <Ionicons name="add" size={20} color={Colors.textInverse} />
+            <Text style={Buttons.primaryText}>New Chat</Text>
+          </View>
+        </TouchableOpacity>
+      
         <View style={Dividers.horizontal} />
         
         <View style={styles.historySection}>
@@ -97,13 +88,14 @@ export default function App() {
     setInput('');
     setPickedImage(null);
     setNewChatFlag(true);
+    setTimeout(() => setNewChatFlag(false), 100);
   };
 
   return (
     <SafeAreaProvider>
       <NavigationContainer theme={MyTheme} ref={navigationRef}>
         <Drawer.Navigator
-          drawerContent={(props) => <CustomDrawerContent {...props} />}
+          drawerContent={(props) => <CustomDrawerContent {...props} onNewChat={handleNewChat} />}
           screenOptions={{
             headerStyle: {
               backgroundColor: Colors.primary,
@@ -138,7 +130,7 @@ export default function App() {
                 setInput={setInput}
                 pickedImage={pickedImage}
                 setPickedImage={setPickedImage}
-                onNewChat={newChatFlag ? handleNewChat : undefined}
+                newChatFlag={newChatFlag}
               />
             )}
           </Drawer.Screen>
