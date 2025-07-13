@@ -53,6 +53,7 @@ export const Colors = {
   // Shadow Colors
   shadow: '#000000',
   shadowPrimary: '#0D75B0',
+  lightBlueColor:'#e6f3ff50'
 };
 
 // Spacing Scale
@@ -141,7 +142,7 @@ export const Shadows = {
 export const Layout = {
   container: {
     flex: 1,
-    marginTop: Spacing.xxl,
+    // marginTop: Spacing.xxl,
     backgroundColor: Colors.background,
   },
   center: {
@@ -255,13 +256,19 @@ export const Texts = StyleSheet.create({
     fontWeight: Typography.weights.semibold,
     color: Colors.textPrimary,
   },
+  chatHistoryTitle: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.black,
+  },
   body: {
     fontSize: Typography.sizes.md,
     color: Colors.textPrimary,
   },
   bodySecondary: {
-    fontSize: Typography.sizes.md,
+    fontSize: Typography.sizes.sm,
     color: Colors.textSecondary,
+    alignSelf: 'flex-end',
   },
   caption: {
     fontSize: Typography.sizes.sm,
@@ -303,8 +310,8 @@ export const Inputs = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.full,
     marginHorizontal: Spacing.lg,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.sm,
+    // marginTop: Spacing.sm,
+    // marginBottom: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     ...Shadows.primary,
@@ -333,12 +340,12 @@ export const Cards = StyleSheet.create({
   history: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primaryLight,
+    backgroundColor: Colors.lightBlueColor,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: Colors.gray[200],
   },
   message: {
     maxWidth: '80%',

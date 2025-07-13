@@ -25,7 +25,6 @@ const HistoryScreen: React.FC = () => {
       setError(null);
       
       const response = await apiService.getUserChatDetails(TEST_EMAIL);
-      
       if (response.success && response.data) {
         setChatHistory(Array.isArray(response.data) ? response.data : [response.data]);
       } else {
@@ -87,14 +86,6 @@ const HistoryScreen: React.FC = () => {
   return (
     <SafeAreaView style={Layout.safeArea} edges={["left", "right", "bottom"]}>
       <View style={Layout.container}>  
-      {chatHistory && (
-          <View style={styles.summaryContainer}>
-            <Text style={Texts.bodySecondary}>
-              Total Chats: {chatHistory.length}
-            </Text>
-          </View>
-        )}
-        
         <FlatList
           data={chatHistory || []}
           keyExtractor={item => item.chatId}
@@ -103,14 +94,19 @@ const HistoryScreen: React.FC = () => {
               style={Cards.history}
               onPress={() => handleChatPress(item)}
             >
-              <Ionicons name="chatbubble-ellipses-outline" size={24} color={Colors.secondary} style={{ marginRight: Spacing.md }} />
+              {/* <Ionicons name="chatbubble-ellipses-outline" size={24} color={Colors.secondary} style={{ marginRight: Spacing.md }} /> */}
               <View style={styles.chatInfo}>
-                <Text style={Texts.h4}>Chat ID: {item.chatId}</Text>
-                <Text style={Texts.bodySecondary}>Started: {formatDate(item.createdAt)}</Text>
+                <Text style={Texts.chatHistoryTitle} numberOfLines={1} ellipsizeMode='clip'>{item.chatId}</Text>
+                <Text style={Texts.bodySecondary}>{formatDate(item.createdAt)}</Text>
                 {/* You can show more info here if you want */}
               </View>
             </TouchableOpacity>
           )}
+          ListHeaderComponent={
+            <Text style={{ textAlign: 'center', padding: 8 }}>
+              Total Chats: {chatHistory?.length}
+            </Text>
+          }
           contentContainerStyle={Lists.container}
           ListEmptyComponent={
             <View style={States.emptyContainer}>
@@ -128,6 +124,7 @@ const HistoryScreen: React.FC = () => {
 const styles = StyleSheet.create({
   chatInfo: {
     flex: 1,
+    gap: Spacing.sm,
   },
   summaryContainer: {
     paddingHorizontal: Spacing.xl,

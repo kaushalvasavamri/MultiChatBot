@@ -165,7 +165,7 @@ class ApiService {
       }
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
+        message: error instanceof Error ? 'Please try again...' : 'Unknown error occurred'
       };
     }
   }

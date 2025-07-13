@@ -18,7 +18,8 @@ export default function InputBar({ value, onChangeText, onSend, onPickImage, dis
     <View style={[Inputs.bar, style]}>
       <TouchableOpacity style={[Buttons.iconSecondary, { marginRight: Spacing.sm }]} 
       disabled={isLoading}
-      onPress={onPickImage}>
+        // onPress={onPickImage}
+      >
         <Ionicons name="add" size={24} color={Colors.textInverse} />
       </TouchableOpacity>
       {/* <TouchableOpacity style={[Buttons.iconSecondary, { marginRight: Spacing.sm }]} disabled={isLoading}>
@@ -28,7 +29,7 @@ export default function InputBar({ value, onChangeText, onSend, onPickImage, dis
         style={Inputs.textInput}
         value={value}
         onChangeText={onChangeText}
-        placeholder="Ask me something..."
+        placeholder="Ask anything..."
         placeholderTextColor={Colors.textLight}
         editable={!disabled}
         returnKeyType="send"
@@ -42,7 +43,7 @@ export default function InputBar({ value, onChangeText, onSend, onPickImage, dis
           onPress={onSend} 
           disabled={disabled || isLoading}
         >
-        <Ionicons name="send" size={26} color={Colors.textInverse} />
+        <Ionicons name="send" size={24} color={Colors.textInverse} />
         </TouchableOpacity>
       )}
     </View>

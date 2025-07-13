@@ -75,6 +75,7 @@ interface ChatScreenProps {
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessages, input, setInput, pickedImage, setPickedImage, onNewChat }) => {
   const route = useRoute();
+  console.log('ChatScreen route params:', route.params);
   const passedChatId = (route as any).params?.chatId as string | undefined;
   const [isOldChat, setIsOldChat] = useState(false);
   const [step, setStep] = useState<Step>('waitUser');
@@ -409,6 +410,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     
     // Reset loading state
     setIsLoading(false);
+    scrollToBottom();
   };
 
   const handleIssueTypeSelect = async (issueType: string) => {
@@ -580,9 +582,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
               offset: CommonValues.spacing.xxxlarge * 10 * index,
               index,
             })}
-            onContentSizeChange={scrollToBottom}
-            onLayout={scrollToBottom}
-            onScroll={handleScroll}
+            // onContentSizeChange={scrollToBottom}
+            // onLayout={scrollToBottom}
+            // onScroll={handleScroll}
           />
           {showScrollButton && (
             <TouchableOpacity
@@ -624,7 +626,7 @@ const styles = StyleSheet.create({
   promptText: {
     fontSize: CommonValues.fontSize.xxxlarge,
     fontWeight: 'bold',
-    color: Colors.primary,
+    color: Colors.black,
     textAlign: 'center',
     marginBottom: Spacing.xxxl,
   },
@@ -648,7 +650,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primaryLight,
   },
   suggestionText: {
-    color: Colors.primary,
+    color: Colors.black,
     fontWeight: '600',
     fontSize: CommonValues.fontSize.large,
   },
@@ -681,7 +683,7 @@ const styles = StyleSheet.create({
     color: Colors.textInverse,
   },
   botText: {
-    color: Colors.primary,
+    color: Colors.black,
   },
   priorityRow: {
     flexDirection: 'row',
