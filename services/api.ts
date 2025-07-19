@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API Base URL
-const API_BASE_URL = 'https://6a0a-14-195-100-18.ngrok-free.app';
+const API_BASE_URL = 'https://hackathon-2025-baroda.azurewebsites.net';
 
 // Request Models
 export interface GetUserChatRequest {
@@ -67,7 +67,8 @@ export interface ChatHistoryResponse {
   chatId: string;
   email: string;
   createdAt: string;
-  conversations: ConversationDetail[];
+  conversations: ConversationDetail[] | null;
+  chatTitle: string;
 }
 
 export interface ChatResponse {
@@ -140,30 +141,6 @@ class ApiService {
     }
   }
 
-  // Save conversation message
-  async saveConversationMessage(chatId: string, message: string, isUser: boolean, type?: string, data?: any): Promise<{ success: boolean; message?: string }> {
-    try {
-      const response = await axios.post(`${this.baseURL}/ChatDetails/saveMessage`, {
-        chatId,
-        message,
-        isUser,
-        type,
-        data,
-        timestamp: new Date().toISOString()
-      });
-      
-      return {
-        success: true
-      };
-    } catch (error) {
-      console.error('Error saving conversation message:', error);
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
-      };
-    }
-  }
-
   // Send chat message and get bot response
   async sendChatMessage(chatRequest: ChatRequest): Promise<ChatResponse> {
     try {
@@ -189,11 +166,31 @@ class ApiService {
       }
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
+        message: error instanceof Error ? 'Please try again...' : 'Unknown error occurred'
       };
     }
   }
-}
 
+  // API Endpoints
+  private CHAT_DETAILS_ENDPOINT = '/api/ChatDetails/ChatId';
+
+  // Get chat details from history
+  async getChatDetailsFromHistory(chatId: string) {
+    try {
+      const response = await axios.get(`${API_BASE_URL}${this.CHAT_DETAILS_ENDPOINT}?ChatId=${chatId}`);
+      console.log('Chat details response:', JSON.stringify(response.data, null, 2));
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error fetching chat details:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  };
+}
 // Export singleton instance
 export const apiService = new ApiService(); 

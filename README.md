@@ -81,12 +81,28 @@ MultiChatBot/
 ├── services/
 │   └── api.ts              # API service with request/response models
 ├── screens/
-│   ├── ChatScreen.tsx      # Main chat interface
+│   ├── ChatScreen.tsx      # Main chat interface with centralized input handling
 │   └── HistoryScreen.tsx   # Chat history view
 ├── components/
 │   └── InputBar.tsx        # Chat input component
 └── App.tsx                 # Main application component
 ```
+
+## Code Architecture
+
+### Centralized Input Handling
+The chat system uses a centralized `handleUserInput` function that eliminates code duplication across different input types (email, slot, priority, issue type). This function:
+
+- **Validates input** based on the current step (email format, slot numbers, etc.)
+- **Prepares API requests** with proper chat/conversation IDs
+- **Handles responses** consistently using the shared `handleBotResponse` utility
+- **Manages loading states** and error handling uniformly
+
+### Key Benefits
+- **Reduced code duplication**: Single function handles all input types
+- **Consistent validation**: Centralized validation logic for each input type
+- **Unified error handling**: Standardized error messages and loading states
+- **Easier maintenance**: Changes to input handling logic only need to be made in one place
 
 ## Usage
 
