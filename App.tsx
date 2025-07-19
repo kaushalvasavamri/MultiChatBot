@@ -29,7 +29,7 @@ export const BottomNavHeightContext = createContext(0); // Set to 0 since we're 
 
 const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
-const initialBotMessage: Message = { id: 'greet', text: 'Hi! How can I help you today?', isUser: false };
+const initialBotMessage: Message = { id: 'greet', text: '', isUser: false };
 
 // Custom drawer content component
 const CustomDrawerContent = (props: any) => {
@@ -79,7 +79,7 @@ const CustomDrawerContent = (props: any) => {
 
 export default function App() {
   const [newChatFlag, setNewChatFlag] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([initialBotMessage]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [pickedImage, setPickedImage] = useState<string | null>(null);
 

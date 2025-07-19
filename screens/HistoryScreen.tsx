@@ -96,7 +96,7 @@ const HistoryScreen: React.FC = () => {
             >
               {/* <Ionicons name="chatbubble-ellipses-outline" size={24} color={Colors.secondary} style={{ marginRight: Spacing.md }} /> */}
               <View style={styles.chatInfo}>
-                <Text style={Texts.chatHistoryTitle} numberOfLines={1} ellipsizeMode='clip'>{item.chatId}</Text>
+                <Text style={Texts.chatHistoryTitle} numberOfLines={1} ellipsizeMode='clip'>{item.chatTitle}</Text>
                 <Text style={Texts.bodySecondary}>{formatDate(item.createdAt)}</Text>
                 {/* You can show more info here if you want */}
               </View>

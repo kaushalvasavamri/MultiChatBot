@@ -68,6 +68,7 @@ export interface ChatHistoryResponse {
   email: string;
   createdAt: string;
   conversations: ConversationDetail[] | null;
+  chatTitle: string;
 }
 
 export interface ChatResponse {
