@@ -4,9 +4,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import InputBar from '../components/InputBar';
-import { apiService, ChatRequest } from '../services/api';
+import { apiService, ChatRequest, SlotValue } from '../services/api';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { Colors, Spacing, BorderRadius, CommonValues } from '../styles/common';
+import { Colors, Spacing, BorderRadius, CommonValues, Buttons } from '../styles/common';
 import { useRoute } from '@react-navigation/native';
 
 // UUID generation function
@@ -33,7 +33,7 @@ export interface Message {
   id: string;
   text: string;
   isUser: boolean;
-  type?: 'text' | 'issueType' | 'priority' | 'slots' | 'slot' | 'confirmation' | 'email' | 'image';
+  type?: 'text' | 'issueType' | 'priority' | 'slots' | 'slot' | 'confirmation' | 'email' | 'image' | 'suggestions';
   data?: any;
 }
 
@@ -55,9 +55,8 @@ const priorities = [
 
 // Removed mock slots and API calls - using sendChatMessage API instead
 
-const initialBotMessage: Message = { id: 'greet', text: 'Hi! How can I help you today?', isUser: false };
+const initialBotMessage: Message = { id: generateUUID(), text: 'Hello, How can I help you today?', isUser: false };
 
-const INPUT_BAR_GAP = 8;
 
 interface ChatScreenProps {
   navigation: DrawerNavigationProp<any>;
@@ -76,18 +75,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
   const passedChatId = (route as any).params?.chatId as string | undefined;
   const [isOldChat, setIsOldChat] = useState(false);
   const [step, setStep] = useState<Step>('waitUser');
-  const headerHeight = 0;
   const [selectedIssueType, setSelectedIssueType] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<SlotValue | null>(null);
   const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const insets = useSafeAreaInsets();
-  const inputBarMarginBottom = insets.bottom + INPUT_BAR_GAP;
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const flatListRef = React.useRef<FlatList>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
 
   // Mock email for testing - in a real app, this would come from user authentication
   const TEST_EMAIL = 'nisarg.parikh@mrisoftware.com';
@@ -97,8 +96,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     input: string,
     step: Step,
     setEmail?: (email: string) => void,
-    setSelectedIssueType?: (type: string) => void,
-    setSelectedPriority?: (priority: string) => void
+    selectedSlotObject?: any
   ) => {
     // Validate input based on step
     let isValid = true;
@@ -109,12 +107,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         if (!validateEmail(input)) {
           isValid = false;
           validationMessage = 'Please enter a valid email address.';
-        }
-        break;
-      case 'slot':
-        if (!validateSlot(input)) {
-          isValid = false;
-          validationMessage = `Please enter a valid slot number. You entered: "${input.trim()}"`;
         }
         break;
       case 'waitUser':
@@ -166,13 +158,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         apiMessage = userEmail;
         break;
       case 'slot':
-        const slotNumber = parseInt(input.trim(), 10);
-        userMessage = { id: generateUUID(), text: `Slot: ${slotNumber}`, isUser: true };
-        apiMessage = `Slot: ${slotNumber}`;
+        // For slot selection, we might have slot data or just text input
+        const slotText = input.trim();
+        userMessage = { id: generateUUID(), text: slotText, isUser: true };
+        // If we have a selected slot object, use it; otherwise try to find by displayText
+        if (selectedSlotObject) {
+          apiMessage = `Slot ${selectedSlotObject.displayText}`;
+        } else {
+          apiMessage = `Slot ${availableSlots.find(slot => slot.displayText === slotText)?.slotValue.start}`;
+        }
         break;
       case 'issueType':
         userMessage = { id: generateUUID(), text: `Issue: ${input.charAt(0).toUpperCase() + input.slice(1)}`, isUser: true };
-        apiMessage = `Issue Type: ${input}`;
+        apiMessage = `Issue Type ${input}`;
         break;
       case 'priority':
         userMessage = { id: generateUUID(), text: `Priority: ${input.charAt(0).toUpperCase() + input.slice(1)}`, isUser: true };
@@ -185,12 +183,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     }
 
     // Add user message to chat only for certain steps
-    if (step === 'issueType' || step === 'priority') {
+    if (step === 'issueType' || step === 'priority' || step === 'slot') {
       setMessages(prev => [userMessage, ...prev]);
     }
 
     // Send to API
     try {
+      console.log('slot: send API', selectedSlotObject || selectedSlot);
       const chatRequest: ChatRequest = {
         userEmail: TEST_EMAIL,
         message: apiMessage,
@@ -198,11 +197,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         chatId: chatId,
         conversationId: conversationId || generateUUID(),
         sender: 'user',
-        selectedSlot: null,
-        isSlotSelected: false,
+        selectedSlot: step === 'slot' && (selectedSlotObject || selectedSlot) ? 
+          {
+            start: (selectedSlotObject || selectedSlot).slotValue.start, 
+            end: (selectedSlotObject || selectedSlot).slotValue.end, 
+            tenantEmail: (selectedSlotObject || selectedSlot).slotValue.tenantEmail
+          }
+        : null,
+        isSlotSelected: step === 'slot' && (selectedSlotObject || selectedSlot) ? true : false,
       };
 
       console.log(`Sending ${step} to API:`, chatRequest);
+      console.log('Selected slot data:', selectedSlotObject || selectedSlot);
+      if (step === 'slot' && (selectedSlotObject || selectedSlot)) {
+        console.log('Slot value structure:', (selectedSlotObject || selectedSlot).slotValue);
+      }
       
       const chatResponse = await apiService.sendChatMessage(chatRequest);
       
@@ -231,22 +240,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     setStep('waitUser');
     setSelectedIssueType(null);
     setSelectedPriority(null);
+    setSelectedSlot(null);
     setEmail('');
+    // setInput('');
+    setIsLoading(false);
+    setIsOldChat(false);
+    setMessages([]);
+    setAvailableSlots([]);
     
     // Reset chat and conversation IDs to null so they will be generated fresh
     console.log('Starting new chat - resetting IDs');
     setCurrentChatId(null);
     setCurrentConversationId(null);
-    
-    // Create a new chat session
-    try {
-      const response = await apiService.createNewChat(TEST_EMAIL);
-      if (response.success && response.chatId) {
-        setCurrentChatId(response.chatId);
-      }
-    } catch (error) {
-      console.error('Error creating new chat:', error);
-    }
   };
 
   const scrollToBottom = () => {
@@ -258,10 +263,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     }
   };
 
-  const handleScroll = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    setShowScrollButton(offsetY > 200);
-  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -284,6 +285,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     setCurrentConversationId: (id: string) => void
   ) => {
     if (chatResponse.success && chatResponse.confirmationMessage) {
+      console.log('Full chatResponse:', chatResponse);
       const confirmationMessage = chatResponse.confirmationMessage;
       setTimeout(() => {
         const botMessage = { id: generateUUID(), text: confirmationMessage, isUser: false };
@@ -295,12 +297,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
 
         // Handle userIssueJson logic - ask for only null fields
         const userIssue = chatResponse.userIssueJson;
+        console.log('handleBotResponse userIssue:', chatResponse.availableSlots);
+        
+        if (chatResponse.availableSlots && chatResponse.availableSlots.length > 0) {
+           setAvailableSlots(chatResponse.availableSlots);
+           console.log('Set available slots:', chatResponse.availableSlots);
+        }
         if (userIssue) {
+          console.log('Checking userIssue fields - issueType:', userIssue.issueType, 'priority:', userIssue.priority, 'contactEmail:', userIssue.contactEmail, 'availableSlots:', userIssue.availableSlots);
           // Check which fields are null and ask for them in sequence
           if (userIssue.issueType === null) {
             setTimeout(() => {
               setMessages(prev => [
-                { id: 'issue-type', text: 'Please select the type of maintenance issue:', isUser: false, type: 'issueType' },
+                { id: generateUUID(), text: 'Please select the type of maintenance issue:', isUser: false, type: 'issueType' },
                 ...prev,
               ]);
               setStep('issueType');
@@ -308,7 +317,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
           } else if (userIssue.priority === null) {
             setTimeout(() => {
               setMessages(prev => [
-                { id: 'priority', text: 'Please select the priority of your issue:', isUser: false, type: 'priority' },
+                { id: generateUUID(), text: 'Please select the priority of your issue:', isUser: false, type: 'priority' },
                 ...prev,
               ]);
               setStep('priority');
@@ -316,22 +325,53 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
           } else if (userIssue.contactEmail === null) {
             setTimeout(() => {
               setMessages(prev => [
-                { id: 'ask-email', text: 'Please enter your email address:', isUser: false, type: 'email' },
+                { id: generateUUID(), text: 'Please enter your email address:', isUser: false, type: 'email' },
                 ...prev,
               ]);
               setStep('email');
             }, 1000);
-          } else if (userIssue.preferredSlotIndex === null) {
-            setTimeout(() => {
+          } else if (chatResponse.availableSlots && chatResponse.availableSlots.length > 0) {
+            console.log('handle bot response slot with data:', chatResponse.availableSlots);
+           setTimeout(() => {
               setMessages(prev => [
-                { id: 'ask-slot', text: 'Please enter your preferred slot number:', isUser: false, type: 'slot' },
+                { 
+                  id: generateUUID(), 
+                  text: 'Please select your preferred slot:', 
+                  isUser: false, 
+                  type: 'slot',
+                  data: { slots: chatResponse.availableSlots }
+                },
                 ...prev,
               ]);
               setStep('slot');
+              console.log('Set step to slot');
             }, 1000);
-          } else {
+          } 
+          // else if (!chatResponse.availableSlots || chatResponse.availableSlots.length === 0) {
+          //   console.log('handle bot response slot: no slots available');
+          //   setTimeout(() => {
+          //     setMessages(prev => [
+          //       { id: generateUUID(), text: 'Please enter your preferred slot number:', isUser: false, type: 'slot' },
+          //       ...prev,
+          //     ]);
+          //     setStep('slot');
+          //   }, 1000);
+          // }
+           else {
             // All fields are filled, conversation is complete
             console.log('All fields completed:', userIssue);
+            setSelectedSlot(null);
+            setTimeout(() => {
+              setMessages(prev => [
+                { 
+                  id: generateUUID(), 
+                  text: 'Great! Your maintenance request has been submitted. Here are some suggestions:', 
+                  isUser: false, 
+                  type: 'suggestions' 
+                },
+                ...prev,
+              ]);
+            }, 1000);
           }
         }
       }, 800);
@@ -409,14 +449,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         };
         setMessages(prev => [errorMsg, ...prev]);
       }
-          } else if (step === 'email') {
-        await handleUserInput(input, step, setEmail);
+      } else if (step === 'email') {
+        await handleUserInput(input, step, setEmail, undefined);
       } else if (step === 'slot') {
-        await handleUserInput(input, step);
+        console.log('step slot:', step);
+        await handleUserInput(input, step, undefined, undefined);
       } else if (step === 'issueType') {
         await handleUserInput(input, step, undefined, setSelectedIssueType);
       } else if (step === 'priority') {
-        await handleUserInput(input, step, undefined, undefined, setSelectedPriority);
+        await handleUserInput(input, step, undefined, undefined);
       }
     
     // Reset loading state
@@ -428,11 +469,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     await handleUserInput(issueType, 'issueType', undefined, setSelectedIssueType);
   };
 
-  const handlePrioritySelect = async (priority: string) => {
-    await handleUserInput(priority, 'priority', undefined, undefined, setSelectedPriority);
+  const handleSlotSelect = async (slot: any) => {
+    setSelectedSlot(slot);
+    await handleUserInput(slot.displayText, 'slot', undefined, slot);
   };
 
-  // Removed fetchSlots useEffect - slots will be handled by the backend API
+  const handlePrioritySelect = async (priority: string) => {
+    await handleUserInput(priority, 'priority', undefined, undefined);
+  };
 
   React.useEffect(() => {
     if (onNewChat) {
@@ -502,8 +546,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         const allMessages = chat.conversations.flatMap((conv: any) => (conv.messages || [])).reverse();
         // Map to your Message[] format
         setMessages(
-          allMessages.map((msg: any) => ({
-            id: msg.messageId,
+          allMessages.map((msg: any, index: number) => ({
+            id: msg.messageId || `msg-${index}`,
             text: msg.messageText,
             isUser: msg.sender === 'user',
             // type, data, etc. can be added if needed
@@ -550,6 +594,29 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         </View>
       );
     }
+    if (item.type === 'slot') {
+      console.log('Rendering slot message, item.data:', item.data);
+      console.log('Available slots state:', availableSlots);
+      return (
+        <View style={[styles.bubble, styles.botBubble]}>
+          <Text style={[styles.messageText, styles.botText]}>Please select your preferred slot:</Text>
+          <View style={styles.priorityRow}>
+            {(item.data?.slots || availableSlots)?.map((slot: any, index: number) => (
+              <TouchableOpacity
+                key={`slot-${index}-${slot.displayText}`}
+                style={[styles.priorityBtn, selectedSlot === slot.slotValue && styles.priorityBtnSelected]}
+                onPress={() => handleSlotSelect(slot)}
+                disabled={!!selectedSlot}
+              >
+                <Text style={[styles.priorityBtnText, selectedSlot === slot.slotValue && styles.priorityBtnTextSelected]}>{slot.displayText}</Text>
+              </TouchableOpacity>
+            )) || (
+              <Text style={[styles.messageText, styles.botText]}>No available slots found.</Text>
+            )}
+          </View>
+        </View>
+      );
+    }
     if (item.type === 'priority') {
       return (
         <View style={[styles.bubble, styles.botBubble]}>
@@ -581,6 +648,60 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         </View>
       );
     }
+    if (item.type === 'suggestions') {
+      return (
+        <View style={[styles.bubble, styles.botBubble]}>
+          <Text style={[styles.messageText, styles.botText]}>{item.text}</Text>
+          <View style={styles.suggestionsContainer}>
+            <OutlineButton 
+              icon='send'
+              title="New conversation" 
+              onPress={() => {
+                // Start new conversation with same chatId but new conversationId
+                setCurrentConversationId(null);
+                setStep('waitUser');
+                setSelectedIssueType(null);
+                setSelectedPriority(null);
+                setEmail('');
+                setSelectedSlot(null);
+                
+                // Add bot message asking for new conversation information
+                setTimeout(() => {
+                  setMessages(prev => [
+                    { 
+                      id: generateUUID(), 
+                      text: 'Please provide information for a new conversation', 
+                      isUser: false 
+                    },
+                    ...prev,
+                  ]);
+                  // hide this suggestion message
+                  setMessages(prev => prev.filter(m => m.id !== item.id));
+                }, 500);
+              }} 
+            />
+            <OutlineButton 
+              icon = "chatbox-ellipses"
+              title="New chat" 
+              onPress={() => {
+                // start new chat or navigate to new chat screen
+                startNewChat();
+              }} 
+            />
+            <OutlineButton 
+              icon = "calendar"
+              title="Add event to calendar" 
+              onPress={() => {
+                // add calendar event
+                setInput('Add event to calendar');
+
+                handleSend();
+              }} 
+            />
+          </View>
+        </View>
+      );
+    }
     return (
       <View style={[styles.bubble, item.isUser ? styles.userBubble : styles.botBubble]}>
         <Text style={[styles.messageText, item.isUser ? styles.userText : styles.botText]}>{item.text}</Text>
@@ -595,7 +716,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         ...prev,
       ]);
     }
-  }, [step, messages]);
+  }, [step]);
 
   React.useEffect(() => {
     if (step === 'priority' && !messages.some(m => m.type === 'priority')) {
@@ -604,7 +725,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         ...prev,
       ]);
     }
-  }, [step, messages]);
+  }, [step]);
+
+
+  React.useEffect(() => {
+    if (step === 'slot' && !messages.some(m => m.type === 'slot')) {
+      console.log('useEffect: Adding slot message, step:', step);
+      setMessages(prev => [
+        { id: generateUUID(), text: '', isUser: false, type: 'slot' },
+        ...prev,
+      ]);
+    }
+  }, [step]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.primaryLight }} edges={[ "left", "right"]}>
@@ -652,6 +784,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
             value={input}
             onChangeText={setInput}
             onSend={handleSend}
+            // onMicClick={pickImage}
             onPickImage={pickImage}
             disabled={step === 'issueType' || step === 'priority'}
             isLoading={isLoading}
@@ -660,6 +793,22 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+};
+
+// const speak = () => {
+//   const thingToSay = '1';
+//   Speech.speak(thingToSay);
+// };
+
+const OutlineButton = ({ title, onPress, icon}: {title: string, onPress: () => void, icon?: string}) => {
+  return (
+    <TouchableOpacity style={Buttons.outline} onPress={onPress}>
+      <View style = {{flexDirection: 'row', alignItems: 'center', gap: Spacing.sm}}>
+        {icon && <Ionicons name={icon as any} size={20} color={Colors.primary} />}
+        <Text style={Buttons.outlineText}>{title}</Text>
+      </View>
+    </TouchableOpacity>
   );
 };
 
@@ -817,6 +966,10 @@ const styles = StyleSheet.create({
   },
   newChatButton: {
     padding: Spacing.sm,
+  },
+  suggestionsContainer: {
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
   },
 });
 

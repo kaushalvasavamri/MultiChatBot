@@ -15,7 +15,7 @@ export interface ChatRequest {
   chatId: string;
   conversationId: string;
   sender: 'user' | 'assistant';
-  selectedSlot: any[] | null;//1. param: start, 2. time param :end, 3. tenant email
+  selectedSlot: SlotValue | null;//1. param: start, 2. time param :end, 3. tenant email
   isSlotSelected: boolean;
 }
 
@@ -81,10 +81,21 @@ export interface ChatResponse {
     issueType: string | null;
     priority: string | null;
     contactEmail: string | null;
-    preferredSlotIndex: number | null;
   };
+  availableSlots?: SlotResponse[] | null;
   conversationId?: string;
   chatId?: string;
+}
+
+export interface SlotResponse {
+  displayText: string;
+  slotValue: SlotValue;
+}
+
+export interface SlotValue {
+  start: any;
+  end: any;
+  tenantEmail: string;
 }
 
 // API Service Class
@@ -158,7 +169,8 @@ class ApiService {
         confirmationMessage: response.data.confirmationMessage,
         userIssueJson: response.data.userIssueJson,
         conversationId: response.data.conversationId,
-        chatId: response.data.chatId
+        chatId: response.data.chatId,
+        availableSlots: response.data.availableSlots
       };
     } catch (error: any) {
       console.error('Error sending chat message:', error);
