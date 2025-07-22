@@ -45,7 +45,6 @@ const issueTypes = [
   { label: 'HVAC', value: 'hvac' },
   { label: 'Appliance', value: 'appliance' },
   { label: 'Structural', value: 'structural' },
-  { label: 'Other', value: 'other' },
 ];
 
 const priorities = [
@@ -198,7 +197,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         isNewConversation: !currentConversationId,
         chatId: chatId,
         conversationId: conversationId || generateUUID(),
-        sender: 'user'
+        sender: 'user',
+        selectedSlot: null,
+        isSlotSelected: false,
       };
 
       console.log(`Sending ${step} to API:`, chatRequest);
@@ -386,7 +387,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
           isNewConversation: !currentConversationId,
           chatId: chatId,
           conversationId: conversationId || generateUUID(),
-          sender: 'user'
+          sender: 'user',
+          selectedSlot: null,
+          isSlotSelected: false,
         };
 
         console.log('Sending chat request from ChatScreen:', chatRequest);
@@ -608,7 +611,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={ useSafeAreaInsets().bottom }
+        keyboardVerticalOffset={ useSafeAreaInsets().bottom + 48 }
       >
         <View style={{ flex: 1 }}>
           <FlatList

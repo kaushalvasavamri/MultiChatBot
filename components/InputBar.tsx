@@ -26,13 +26,14 @@ export default function InputBar({ value, onChangeText, onSend, onPickImage, dis
         <Ionicons name="mic" size={24} color={Colors.textInverse} />
       </TouchableOpacity> */}
       <TextInput
-        style={Inputs.textInput}
+        style={[Inputs.textInput, styles.multilineInput]}
         value={value}
         onChangeText={onChangeText}
         placeholder="Ask anything..."
         placeholderTextColor={Colors.textLight}
         editable={!disabled}
         returnKeyType="send"
+        multiline={true}
         onSubmitEditing={onSend}
       />
       {isLoading ? (
@@ -53,5 +54,11 @@ export default function InputBar({ value, onChangeText, onSend, onPickImage, dis
 const styles = StyleSheet.create({
   sendButtonLoading: {
     opacity: 0.9,
+  },
+  multilineInput: {
+    minHeight: 40,
+    maxHeight: 120,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
 }); 
