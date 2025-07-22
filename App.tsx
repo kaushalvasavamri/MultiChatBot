@@ -31,7 +31,7 @@ export const BottomNavHeightContext = createContext(0); // Set to 0 since we're 
 
 const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
-const initialBotMessage: Message = { id: 'greet', text: '', isUser: false };
+const initialBotMessage: Message = { id: 'greet', text: 'Hello, How can I help you today?', isUser: false };
 
 // Custom drawer content component
 const CustomDrawerContent = (props: any) => {
