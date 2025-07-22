@@ -15,6 +15,8 @@ export interface ChatRequest {
   chatId: string;
   conversationId: string;
   sender: 'user' | 'assistant';
+  selectedSlot: any[] | null;//1. param: start, 2. time param :end, 3. tenant email
+  isSlotSelected: boolean;
 }
 
 // Response Models
@@ -109,6 +111,7 @@ class ApiService {
         data: response.data
       };
     } catch (error: any) {
+      console.log('Error fetching user chat details:', error);
       console.error('Error fetching user chat details:', error);
       if (error.response) {
         console.error('Response status:', error.response.status);
