@@ -1,4 +1,4 @@
-package com.anonymous.ChattySquad
+package com.mriassettracking
 
 import android.app.Application
 import android.content.res.Configuration
