@@ -1,4 +1,4 @@
-package com.anonymous.ChattySquad
+package com.mriassettracking.ChattySquad
 
 import android.os.Build
 import android.os.Bundle
@@ -7,6 +7,8 @@ import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
+import com.mriassettracking.BuildConfig
+import com.mriassettracking.R
 
 import expo.modules.ReactActivityDelegateWrapper
 
@@ -33,7 +35,7 @@ class MainActivity : ReactActivity() {
   override fun createReactActivityDelegate(): ReactActivityDelegate {
     return ReactActivityDelegateWrapper(
           this,
-          BuildConfig.IS_NEW_ARCHITECTURE_ENABLED,
+        BuildConfig.IS_NEW_ARCHITECTURE_ENABLED,
           object : DefaultReactActivityDelegate(
               this,
               mainComponentName,

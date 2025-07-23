@@ -1,4 +1,4 @@
-package com.mriassettracking
+package com.mriassettracking.ChattySquad
 
 import android.app.Application
 import android.content.res.Configuration
@@ -12,6 +12,7 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.load
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
+import com.mriassettracking.BuildConfig
 
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
