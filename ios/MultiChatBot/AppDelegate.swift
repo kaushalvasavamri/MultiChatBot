@@ -2,12 +2,15 @@ import Expo
 import React
 import ReactAppDependencyProvider
 
-@UIApplicationMain
-public class AppDelegate: ExpoAppDelegate {
+@main
+public class AppDelegate: ExpoAppDelegate, RNAppAuthAuthorizationFlowManager {
   var window: UIWindow?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+  
+  // Required by RNAppAuthAuthorizationFlowManager protocol
+  public weak var authorizationFlowManagerDelegate: RNAppAuthAuthorizationFlowManagerDelegate?
 
   public override func application(
     _ application: UIApplication,
@@ -32,21 +35,37 @@ public class AppDelegate: ExpoAppDelegate {
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  // Linking API
+  // Linking API - Updated to support RNAppAuth
   public override func application(
     _ app: UIApplication,
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
+    // Handle OAuth redirect URL for RNAppAuth first
+    if let authorizationFlowManagerDelegate = self.authorizationFlowManagerDelegate {
+      if authorizationFlowManagerDelegate.resumeExternalUserAgentFlow(with: url) {
+        return true
+      }
+    }
+    
+    // Fall back to existing logic
     return super.application(app, open: url, options: options) || RCTLinkingManager.application(app, open: url, options: options)
   }
 
-  // Universal Links
+  // Universal Links - Updated to support RNAppAuth
   public override func application(
     _ application: UIApplication,
     continue userActivity: NSUserActivity,
     restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
   ) -> Bool {
+    // Handle Universal-Link–style OAuth redirects first
+    if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+       let delegate = authorizationFlowManagerDelegate,
+       delegate.resumeExternalUserAgentFlow(with: userActivity.webpageURL) {
+      return true
+    }
+    
+    // Fall back to React Native's own Linking logic
     let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
     return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result
   }

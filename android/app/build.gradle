@@ -87,13 +87,16 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.MultiChatBot'
+    namespace "com.mriassettracking"
     defaultConfig {
-        applicationId 'com.anonymous.MultiChatBot'
+        applicationId "com.mriassettracking"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0.0"
+        versionName "1.0"
+        manifestPlaceholders = [
+            appAuthRedirectScheme: 'com.mrisoftware.assettracking.crm'
+        ]
     }
     signingConfigs {
         debug {

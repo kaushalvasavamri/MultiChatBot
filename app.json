@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MultiChatBot",
-    "slug": "MultiChatBot",
+    "name": "ChattySquad",
+    "slug": "ChattySquad",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,19 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.MultiChatBot"
+      "bundleIdentifier": "com.anonymous.ChattySquad",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["com.anonymous.chattysquad", "com.mrisoftware.assettracking.crm"]
+          }
+        ],
+        "NSCalendarsUsageDescription": "This app needs access to your calendar to add events.",
+        "NSCalendarsWriteOnlyAccessUsageDescription": "This app needs write access to your calendar to create and modify events.",
+        "NSCalendarsFullAccessUsageDescription": "This app needs full access to your calendar to manage events.",
+        "NSRemindersUsageDescription": "This app needs access to your reminders to help you manage your tasks."
+      },
+      "scheme": "com.anonymous.chattysquad"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +34,27 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.MultiChatBot"
+      "package": "com.anonymous.ChattySquad",
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT", "BROWSABLE"],
+          "data": {
+            "scheme": "com.anonymous.chattysquad"
+          }
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT", "BROWSABLE"],
+          "data": {
+            "scheme": "com.mrisoftware.assettracking.crm"
+          }
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
