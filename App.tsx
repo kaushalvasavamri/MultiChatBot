@@ -1,14 +1,14 @@
-import React, { useRef, useState, createContext } from 'react';
+import React, { useRef, useState, createContext, useEffect } from 'react';
 import { NavigationContainer, DefaultTheme, Theme, NavigationContainerRef } from '@react-navigation/native';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import ChatScreen from './screens/ChatScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import { Ionicons } from '@expo/vector-icons';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Message } from './screens/ChatScreen';
 import { Colors, Headers, Buttons, Lists, Dividers, Spacing, CommonValues } from './styles/common';
+import { requestUserPermission, setupNotifications } from 'utils/NotificationManager';
 
 const Drawer = createDrawerNavigator();
 
@@ -83,6 +83,23 @@ export default function App() {
   const [input, setInput] = useState('');
   const [pickedImage, setPickedImage] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      requestUserPermission();
+      const handlePushNotification = async (remoteMessage: any) => {
+        const notification = {
+          title: remoteMessage.notification?.title,
+          body: remoteMessage.notification?.body,
+          data: remoteMessage.data,
+        };
+      };
+
+      const cleanup = setupNotifications(handlePushNotification);
+      return cleanup;
+    }
+  }, []);
+
+  
   const handleNewChat = () => {
     setMessages([initialBotMessage]);
     setInput('');

@@ -22,12 +22,7 @@ const generateUUID = (): string => {
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email.trim());
-};
-
-const validateSlot = (slot: string): boolean => {
-  const slotNumber = parseInt(slot.trim(), 10);
-  return !isNaN(slotNumber) && slotNumber >= 1;
-};
+}
 
 export interface Message {
   id: string;
@@ -90,6 +85,62 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
 
   // Mock email for testing - in a real app, this would come from user authentication
   const TEST_EMAIL = 'nisarg.parikh@mrisoftware.com';
+
+  React.useEffect(() => {
+    if (onNewChat) {
+      onNewChat();
+      // Reset chat and conversation IDs for new chat
+      setCurrentChatId(null);
+      setCurrentConversationId(null);
+    }
+  }, [onNewChat]);
+
+  React.useEffect(() => {
+    if (passedChatId) {
+      setCurrentChatId(passedChatId);
+      setIsOldChat(true);
+      console.log('Fetching old messages for chatId:', passedChatId);
+      fetchOldMessages(passedChatId);
+    }
+  }, [passedChatId]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (step === 'issueType' && !messages.some(m => m.type === 'issueType')) {
+      setMessages(prev => [
+        { id: generateUUID(), text: '', isUser: false, type: 'issueType' },
+        ...prev,
+      ]);
+    }
+  }, [step]);
+
+  React.useEffect(() => {
+    if (step === 'priority' && !messages.some(m => m.type === 'priority')) {
+      setMessages(prev => [
+        { id: generateUUID(), text: '', isUser: false, type: 'priority' },
+        ...prev,
+      ]);
+    }
+  }, [step]);
+
+
+  React.useEffect(() => {
+    if (step === 'slot' && !messages.some(m => m.type === 'slot')) {
+      console.log('useEffect: Adding slot message, step:', step);
+      setMessages(prev => [
+        { id: generateUUID(), text: '', isUser: false, type: 'slot' },
+        ...prev,
+      ]);
+    }
+  }, [step]);
 
   // Centralized user input handler
   const handleUserInput = async (
@@ -478,24 +529,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     await handleUserInput(priority, 'priority', undefined, undefined);
   };
 
-  React.useEffect(() => {
-    if (onNewChat) {
-      onNewChat();
-      // Reset chat and conversation IDs for new chat
-      setCurrentChatId(null);
-      setCurrentConversationId(null);
-    }
-  }, [onNewChat]);
-
-  React.useEffect(() => {
-    if (passedChatId) {
-      setCurrentChatId(passedChatId);
-      setIsOldChat(true);
-      console.log('Fetching old messages for chatId:', passedChatId);
-      fetchOldMessages(passedChatId);
-    }
-  }, [passedChatId]);
-
   const fetchOldMessages = async (chatId: string) => {
     console.log('Fetching old messages for chatId:', chatId);
     // Call your API to get the conversation for this chatId
@@ -561,18 +594,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
       }
     }
   };
-
-  // ChatScreen starts fresh - no automatic history loading
-  // Users can view history in the HistoryScreen
-
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
 
   const renderMessage = ({ item }: { item: Message }) => {
     if (item.type === 'issueType') {
@@ -653,7 +674,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
         <View style={[styles.bubble, styles.botBubble]}>
           <Text style={[styles.messageText, styles.botText]}>{item.text}</Text>
           <View style={styles.suggestionsContainer}>
-            <OutlineButton 
+            <OutlineButton
               icon='send'
               title="New conversation" 
               onPress={() => {
@@ -709,35 +730,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
     );
   };
 
-  React.useEffect(() => {
-    if (step === 'issueType' && !messages.some(m => m.type === 'issueType')) {
-      setMessages(prev => [
-        { id: generateUUID(), text: '', isUser: false, type: 'issueType' },
-        ...prev,
-      ]);
-    }
-  }, [step]);
-
-  React.useEffect(() => {
-    if (step === 'priority' && !messages.some(m => m.type === 'priority')) {
-      setMessages(prev => [
-        { id: generateUUID(), text: '', isUser: false, type: 'priority' },
-        ...prev,
-      ]);
-    }
-  }, [step]);
-
-
-  React.useEffect(() => {
-    if (step === 'slot' && !messages.some(m => m.type === 'slot')) {
-      console.log('useEffect: Adding slot message, step:', step);
-      setMessages(prev => [
-        { id: generateUUID(), text: '', isUser: false, type: 'slot' },
-        ...prev,
-      ]);
-    }
-  }, [step]);
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.primaryLight }} edges={[ "left", "right"]}>
       <KeyboardAvoidingView
@@ -780,11 +772,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, messages, setMessag
               <Ionicons name="arrow-down" size={20} color={Colors.textInverse} />
             </TouchableOpacity>
           )}
+          {/* if input is empty, show this text */}
+          {step === 'waitUser' && messages.length === 0 && (
+             <Text style={{flex:1, fontSize:CommonValues.fontSize.xlarge, alignContent:'center', textAlign:'center'}}>Ask me anything related to maintenance</Text>
+          )}
           <InputBar
             value={input}
             onChangeText={setInput}
             onSend={handleSend}
-            // onMicClick={pickImage}
+            onMicClick={()=>{
+              console.log('onMicClick');
+              // speak();
+            }}
             onPickImage={pickImage}
             disabled={step === 'issueType' || step === 'priority'}
             isLoading={isLoading}

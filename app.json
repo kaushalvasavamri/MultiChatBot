@@ -14,15 +14,19 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.MultiChatBot"
+      "bundleIdentifier": "com.anonymous.MultiChatBot",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {"UIBackgroundModes": ["remote-notification"]}
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.MultiChatBot"
+      "permissions": ["POST_NOTIFICATIONS"],
+      "edgeToEdgeEnabled": false,
+      "package": "com.anonymous.MultiChatBot",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"

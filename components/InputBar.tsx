@@ -8,23 +8,24 @@ interface InputBarProps {
   onChangeText: (text: string) => void;
   onSend: () => void;
   onPickImage: () => void;
+  onMicClick: () => void;
   disabled?: boolean;
   isLoading?: boolean;
   style?: any;
 }
 
-export default function InputBar({ value, onChangeText, onSend, onPickImage, disabled = false, isLoading = false, style }: InputBarProps) {
+export default function InputBar({ value, onChangeText, onSend, onPickImage, onMicClick, disabled = false, isLoading = false, style }: InputBarProps) {
   return (
     <View style={[Inputs.bar, style]}>
-      <TouchableOpacity style={[Buttons.iconSecondary, { marginRight: Spacing.sm }]} 
+      {/* <TouchableOpacity style={[Buttons.iconSecondary, { marginRight: Spacing.sm }]} 
       disabled={isLoading}
         // onPress={onPickImage}
       >
         <Ionicons name="add" size={24} color={Colors.textInverse} />
-      </TouchableOpacity>
-      {/* <TouchableOpacity style={[Buttons.iconSecondary, { marginRight: Spacing.sm }]} disabled={isLoading}>
-        <Ionicons name="mic" size={24} color={Colors.textInverse} />
       </TouchableOpacity> */}
+      <TouchableOpacity style={[Buttons.iconSecondary, { marginRight: Spacing.sm }]}>
+        <Ionicons name="mic" size={24} color={Colors.textInverse} onPress={onMicClick} />
+      </TouchableOpacity>
       <TextInput
         style={[Inputs.textInput, styles.multilineInput]}
         value={value}
